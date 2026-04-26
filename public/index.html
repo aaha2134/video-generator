@@ -12,83 +12,91 @@
   header h1 { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   header span { font-size: 13px; color: #64748b; }
 
-  .container { max-width: 900px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 24px; }
+  .container { max-width: 860px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 20px; }
 
   .card { background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 12px; padding: 24px; }
-  .card h2 { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
 
-  /* API settings */
-  .api-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
-  .provider-tabs { display: flex; gap: 8px; }
-  .provider-tab { padding: 8px 16px; border-radius: 8px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all 0.2s; }
-  .provider-tab.active { background: #a78bfa20; border-color: #a78bfa; color: #a78bfa; }
+  /* Provider tabs */
+  .provider-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .provider-tab { padding: 9px 18px; border-radius: 8px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .provider-tab.active { background: #a78bfa20; border-color: #a78bfa; color: #c4b5fd; }
+  .badge-free { font-size: 10px; background: #4ade8030; color: #4ade80; border: 1px solid #4ade8060; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+  .badge-paid { font-size: 10px; background: #fb923c20; color: #fb923c; border: 1px solid #fb923c40; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+
+  /* Inputs */
+  label { font-size: 13px; color: #94a3b8; display: block; margin-bottom: 6px; }
   input[type="text"], input[type="password"] { width: 100%; background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none; transition: border-color 0.2s; }
   input:focus { border-color: #a78bfa; }
+  .input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
   .btn-save { padding: 10px 20px; background: #a78bfa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
   .btn-save:hover { background: #9061f9; }
-  .saved-note { font-size: 12px; color: #4ade80; margin-top: 8px; display: none; }
+  .saved-note { font-size: 12px; color: #4ade80; margin-top: 6px; display: none; }
+  .hint { font-size: 12px; color: #475569; margin-top: 8px; line-height: 1.5; }
+  .hint a { color: #60a5fa; text-decoration: none; }
 
-  /* Upload area */
-  .upload-area { border: 2px dashed #2d2d3d; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  /* Free notice */
+  .free-notice { background: #4ade8010; border: 1px solid #4ade8040; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #86efac; line-height: 1.6; }
+  .free-notice strong { color: #4ade80; }
+
+  /* Upload */
+  .upload-area { border: 2px dashed #2d2d3d; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
   .upload-area:hover, .upload-area.drag-over { border-color: #a78bfa; background: #a78bfa08; }
-  .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .upload-icon { font-size: 48px; margin-bottom: 12px; }
+  .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 44px; margin-bottom: 10px; }
   .upload-area p { color: #64748b; font-size: 14px; }
   .upload-area p strong { color: #a78bfa; }
-  .preview-wrap { position: relative; display: inline-block; margin-top: 16px; }
-  .preview-wrap img { max-height: 300px; max-width: 100%; border-radius: 8px; display: block; }
-  .preview-wrap .remove-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #ef4444; border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .preview-wrap { position: relative; display: inline-block; margin-top: 12px; }
+  .preview-wrap img { max-height: 260px; max-width: 100%; border-radius: 8px; display: block; }
+  .remove-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #ef4444; border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 
-  /* Motion settings */
-  .motion-section { display: grid; gap: 16px; }
-  .presets { display: flex; flex-wrap: wrap; gap: 8px; }
-  .preset-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  /* Motion */
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .preset-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 13px; transition: all 0.2s; }
   .preset-btn:hover { border-color: #60a5fa; color: #60a5fa; }
-  .preset-btn.selected { background: #60a5fa20; border-color: #60a5fa; color: #60a5fa; }
-  .custom-prompt { margin-top: 8px; }
-  label { font-size: 13px; color: #94a3b8; display: block; margin-bottom: 6px; }
-  textarea { width: 100%; background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none; resize: vertical; min-height: 80px; transition: border-color 0.2s; }
+  .preset-btn.selected { background: #60a5fa20; border-color: #60a5fa; color: #93c5fd; }
+  textarea { width: 100%; background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none; resize: vertical; min-height: 72px; transition: border-color 0.2s; }
   textarea:focus { border-color: #a78bfa; }
 
-  /* Options row */
+  /* Slider */
+  .slider-wrap { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #2d2d3d; border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #a78bfa; cursor: pointer; }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-top: 4px; }
+  .slider-val { font-size: 14px; color: #a78bfa; font-weight: 600; min-width: 30px; text-align: right; }
+
+  /* Options */
   .options-row { display: flex; gap: 20px; flex-wrap: wrap; }
-  .option-group { display: flex; flex-direction: column; gap: 8px; }
+  .option-group { display: flex; flex-direction: column; gap: 6px; }
   select { background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 8px 12px; color: #e2e8f0; font-size: 14px; outline: none; cursor: pointer; }
   select:focus { border-color: #a78bfa; }
 
-  /* Generate button */
+  /* Generate */
   .generate-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a78bfa, #60a5fa); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
   .generate-btn:hover { opacity: 0.9; }
   .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Progress */
-  .progress-area { display: none; }
-  .progress-bar-wrap { background: #0f0f13; border-radius: 99px; height: 8px; overflow: hidden; margin: 12px 0; }
-  .progress-bar { height: 100%; background: linear-gradient(90deg, #a78bfa, #60a5fa); border-radius: 99px; width: 0%; transition: width 0.5s; }
-  .progress-status { font-size: 13px; color: #94a3b8; text-align: center; }
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2d2d3d; border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+  .progress-area { display: none; text-align: center; }
+  .progress-bar-wrap { background: #0f0f13; border-radius: 99px; height: 8px; overflow: hidden; margin: 14px 0 8px; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #a78bfa, #60a5fa); border-radius: 99px; width: 0%; transition: width 0.6s; }
+  .progress-status { font-size: 13px; color: #94a3b8; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #2d2d3d; border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Result */
   .result-area { display: none; }
-  .result-area video { width: 100%; border-radius: 8px; background: #000; }
+  .result-area video { width: 100%; border-radius: 8px; background: #000; max-height: 500px; }
   .result-actions { display: flex; gap: 12px; margin-top: 12px; }
   .btn-dl { flex: 1; padding: 12px; background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 8px; color: #e2e8f0; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
   .btn-dl:hover { border-color: #a78bfa; color: #a78bfa; }
   .btn-new { flex: 1; padding: 12px; background: #a78bfa20; border: 1px solid #a78bfa; border-radius: 8px; color: #a78bfa; cursor: pointer; font-size: 14px; font-weight: 600; }
 
   /* Error */
-  .error-box { background: #ef444420; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #ef4444; font-size: 14px; display: none; margin-top: 12px; }
-
-  /* How to use */
-  .howto { background: #1a1a2480; border: 1px solid #2d2d3d40; border-radius: 12px; padding: 20px 24px; }
-  .howto h3 { font-size: 13px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .howto ul { list-style: none; display: grid; gap: 8px; }
-  .howto li { font-size: 13px; color: #64748b; display: flex; gap: 10px; }
-  .howto li::before { content: '→'; color: #a78bfa; }
+  .error-box { background: #ef444418; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #fca5a5; font-size: 14px; display: none; }
 
   @media (max-width: 600px) {
-    .api-row { grid-template-columns: 1fr; }
+    .input-row { grid-template-columns: 1fr; }
     .options-row { flex-direction: column; }
   }
 </style>
@@ -97,26 +105,40 @@
 
 <header>
   <h1>🎬 AI動画ジェネレーター</h1>
-  <span>人物写真 → 10秒動画</span>
+  <span>人物写真 → 動画に変換</span>
 </header>
 
 <div class="container">
 
-  <!-- API Settings -->
+  <!-- Provider + API Key -->
   <div class="card">
-    <h2>APIキー設定</h2>
-    <div class="provider-tabs" style="margin-bottom:14px;">
-      <button class="provider-tab active" onclick="setProvider('runway')" id="tab-runway">Runway Gen-3</button>
-      <button class="provider-tab" onclick="setProvider('kling')" id="tab-kling">Kling AI</button>
+    <h2>サービス選択</h2>
+    <div class="provider-tabs">
+      <button class="provider-tab active" onclick="setProvider('huggingface')" id="tab-hf">
+        🤗 Hugging Face <span class="badge-free">無料</span>
+      </button>
+      <button class="provider-tab" onclick="setProvider('runway')" id="tab-runway">
+        Runway Gen-3 <span class="badge-paid">有料</span>
+      </button>
+      <button class="provider-tab" onclick="setProvider('kling')" id="tab-kling">
+        Kling AI <span class="badge-paid">有料</span>
+      </button>
     </div>
-    <div class="api-row">
-      <span id="api-label" style="font-size:13px;color:#94a3b8;white-space:nowrap;">Runway APIキー</span>
-      <input type="password" id="apiKeyInput" placeholder="APIキーを入力..." autocomplete="off">
+
+    <div id="hf-notice" class="free-notice" style="margin-bottom:14px;">
+      <strong>無料で使えます！</strong> huggingface.co で無料アカウントを作り、<strong>Settings → Access Tokens</strong> でトークンを取得してください（クレジットカード不要）。<br>
+      ※ Stable Video Diffusion モデルを使用。動きの方向は自動生成されます。
+    </div>
+
+    <label id="api-label">Hugging Face トークン（hf_xxxxx）</label>
+    <div class="input-row">
+      <input type="password" id="apiKeyInput" placeholder="hf_xxxxxxxxxxxxxxxx" autocomplete="off">
       <button class="btn-save" onclick="saveApiKey()">保存</button>
     </div>
     <div class="saved-note" id="savedNote">✓ 保存しました</div>
-    <div style="margin-top:10px;font-size:12px;color:#475569;">
-      APIキーはブラウザのローカルストレージにのみ保存されます（サーバーには送信されません）
+    <div class="hint" id="api-hint">
+      取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>
+      → New token → Read権限でOK
     </div>
   </div>
 
@@ -128,7 +150,7 @@
       <div id="uploadPrompt">
         <div class="upload-icon">🖼️</div>
         <p><strong>クリックまたはドラッグ</strong>して画像を選択</p>
-        <p style="margin-top:6px;">人物が写っている写真を使用してください</p>
+        <p style="margin-top:6px;font-size:13px;">人物が写っている写真を使用してください</p>
         <p style="margin-top:4px;font-size:12px;">PNG / JPG / WEBP・最大10MB</p>
       </div>
       <div id="uploadPreview" style="display:none;">
@@ -140,41 +162,46 @@
     </div>
   </div>
 
-  <!-- Motion -->
-  <div class="card">
+  <!-- Motion (paid providers) -->
+  <div class="card" id="motionCard">
     <h2>動きの指定</h2>
-    <div class="motion-section">
-      <div>
-        <label>プリセット（複数選択可）</label>
-        <div class="presets" id="presets">
-          <button class="preset-btn" onclick="togglePreset(this, '踊る')">💃 踊る</button>
-          <button class="preset-btn" onclick="togglePreset(this, '歩く')">🚶 歩く</button>
-          <button class="preset-btn" onclick="togglePreset(this, '手を振る')">👋 手を振る</button>
-          <button class="preset-btn" onclick="togglePreset(this, '走る')">🏃 走る</button>
-          <button class="preset-btn" onclick="togglePreset(this, 'お辞儀をする')">🙇 お辞儀</button>
-          <button class="preset-btn" onclick="togglePreset(this, 'ジャンプする')">🤸 ジャンプ</button>
-          <button class="preset-btn" onclick="togglePreset(this, '笑顔で微笑む')">😊 微笑む</button>
-          <button class="preset-btn" onclick="togglePreset(this, '振り返る')">🔄 振り返る</button>
-          <button class="preset-btn" onclick="togglePreset(this, 'カメラに向かって歩いてくる')">📷 歩み寄る</button>
-          <button class="preset-btn" onclick="togglePreset(this, 'ゆっくり回転する')">🔃 回転</button>
-        </div>
-      </div>
-      <div class="custom-prompt">
-        <label for="customPrompt">カスタム指示（日本語 or English）</label>
-        <textarea id="customPrompt" placeholder="例: 音楽に合わせてヒップホップダンスをする、笑顔でカメラに手を振りながら歩いてくる..."></textarea>
-      </div>
+    <label style="margin-bottom:10px;display:block;">プリセット（複数選択可）</label>
+    <div class="presets" id="presets">
+      <button class="preset-btn" onclick="togglePreset(this,'踊る')">💃 踊る</button>
+      <button class="preset-btn" onclick="togglePreset(this,'歩く')">🚶 歩く</button>
+      <button class="preset-btn" onclick="togglePreset(this,'手を振る')">👋 手を振る</button>
+      <button class="preset-btn" onclick="togglePreset(this,'走る')">🏃 走る</button>
+      <button class="preset-btn" onclick="togglePreset(this,'お辞儀をする')">🙇 お辞儀</button>
+      <button class="preset-btn" onclick="togglePreset(this,'ジャンプする')">🤸 ジャンプ</button>
+      <button class="preset-btn" onclick="togglePreset(this,'笑顔で微笑む')">😊 微笑む</button>
+      <button class="preset-btn" onclick="togglePreset(this,'振り返る')">🔄 振り返る</button>
+      <button class="preset-btn" onclick="togglePreset(this,'カメラに向かって歩いてくる')">📷 歩み寄る</button>
+      <button class="preset-btn" onclick="togglePreset(this,'ゆっくり回転する')">🔃 回転</button>
     </div>
+    <label>カスタム指示</label>
+    <textarea id="customPrompt" placeholder="例: 音楽に合わせてヒップホップダンスをする..."></textarea>
+  </div>
+
+  <!-- Motion intensity (free HF) -->
+  <div class="card" id="intensityCard" style="display:none;">
+    <h2>動きの強さ</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:14px;">値が大きいほど激しく動きます（推奨: 80〜130）</p>
+    <div class="slider-wrap">
+      <input type="range" id="motionSlider" min="1" max="255" value="100" oninput="updateSliderVal(this.value)">
+      <span class="slider-val" id="sliderVal">100</span>
+    </div>
+    <div class="slider-labels"><span>穏やか</span><span>普通</span><span>激しい</span></div>
   </div>
 
   <!-- Options -->
   <div class="card">
     <h2>オプション</h2>
     <div class="options-row">
-      <div class="option-group">
+      <div class="option-group" id="ratioGroup">
         <label>アスペクト比</label>
         <select id="ratioSelect">
-          <option value="16:9">16:9（横長・YouTube）</option>
-          <option value="9:16">9:16（縦長・TikTok/Reels）</option>
+          <option value="1280:768">16:9（横長・YouTube）</option>
+          <option value="768:1280">9:16（縦長・TikTok）</option>
           <option value="1:1">1:1（正方形）</option>
         </select>
       </div>
@@ -188,19 +215,18 @@
     </div>
   </div>
 
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
   <!-- Generate -->
   <button class="generate-btn" id="generateBtn" onclick="generate()">✨ 動画を生成する</button>
-  <div class="error-box" id="errorBox"></div>
 
   <!-- Progress -->
   <div class="card progress-area" id="progressArea">
     <h2>生成中...</h2>
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="progress-status" id="progressStatus">
-      <span class="spinner"></span>待機中...
-    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-status" id="progressStatus"><span class="spinner"></span>待機中...</div>
+    <p style="font-size:12px;color:#475569;margin-top:10px;text-align:center;">Hugging Faceは初回起動に1〜2分かかる場合があります</p>
   </div>
 
   <!-- Result -->
@@ -209,52 +235,42 @@
     <video id="resultVideo" controls loop playsinline></video>
     <div class="result-actions">
       <button class="btn-dl" onclick="downloadVideo()">⬇️ ダウンロード</button>
-      <button class="btn-new" onclick="resetAll()">🔄 もう一度作る</button>
+      <button class="btn-new" onclick="resetResult()">🔄 もう一度作る</button>
     </div>
-  </div>
-
-  <!-- How to use -->
-  <div class="howto">
-    <h3>使い方</h3>
-    <ul>
-      <li>Runway Gen-3またはKling AIのAPIキーを取得して入力してください</li>
-      <li>人物が写っている画像をアップロードします（1人〜複数人OK）</li>
-      <li>プリセットまたはカスタム指示で動きを指定します</li>
-      <li>生成ボタンを押すと約60〜120秒で10秒の動画が完成します</li>
-      <li>Runway: <strong>runwayml.com</strong> でAPIキー取得 / Kling: <strong>klingai.com</strong></li>
-    </ul>
   </div>
 
 </div>
 
 <script>
-let provider = 'runway';
+let provider = 'huggingface';
 let imageBase64 = null;
 let selectedPresets = [];
 let pollTimer = null;
 let currentVideoUrl = null;
 
-// Provider
 function setProvider(p) {
   provider = p;
-  document.getElementById('tab-runway').classList.toggle('active', p === 'runway');
-  document.getElementById('tab-kling').classList.toggle('active', p === 'kling');
-  document.getElementById('api-label').textContent = p === 'runway' ? 'Runway APIキー' : 'Kling APIキー';
+  ['hf','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
+  const tabId = p === 'huggingface' ? 'hf' : p;
+  document.getElementById('tab-'+tabId).classList.add('active');
+
+  const isHF = p === 'huggingface';
+  document.getElementById('hf-notice').style.display = isHF ? 'block' : 'none';
+  document.getElementById('motionCard').style.display = isHF ? 'none' : 'block';
+  document.getElementById('intensityCard').style.display = isHF ? 'block' : 'none';
+  document.getElementById('durationGroup').style.display = isHF ? 'none' : 'flex';
+  document.getElementById('ratioGroup').style.display = isHF ? 'none' : 'flex';
+
+  const labels = {
+    huggingface: { label: 'Hugging Face トークン（hf_xxxxx）', hint: '取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK' },
+    runway:      { label: 'Runway APIキー', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
+    kling:       { label: 'Kling APIキー', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
+  };
+  document.getElementById('api-label').textContent = labels[p].label;
+  document.getElementById('api-hint').innerHTML = labels[p].hint;
+
   const saved = localStorage.getItem(`apiKey_${p}`) || '';
   document.getElementById('apiKeyInput').value = saved;
-  // Kling ratio options
-  const ratioSel = document.getElementById('ratioSelect');
-  if (p === 'kling') {
-    ratioSel.innerHTML = `
-      <option value="16:9">16:9（横長）</option>
-      <option value="9:16">9:16（縦長）</option>
-      <option value="1:1">1:1（正方形）</option>`;
-  } else {
-    ratioSel.innerHTML = `
-      <option value="1280:768">16:9（横長・YouTube）</option>
-      <option value="768:1280">9:16（縦長・TikTok）</option>
-      <option value="1:1">1:1（正方形）</option>`;
-  }
 }
 
 function saveApiKey() {
@@ -265,13 +281,11 @@ function saveApiKey() {
   setTimeout(() => note.style.display = 'none', 2000);
 }
 
-// Load saved key on init
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem(`apiKey_runway`) || '';
+  const saved = localStorage.getItem('apiKey_huggingface') || '';
   document.getElementById('apiKeyInput').value = saved;
 });
 
-// File upload
 function handleFile(file) {
   if (!file) return;
   const reader = new FileReader();
@@ -283,64 +297,102 @@ function handleFile(file) {
   };
   reader.readAsDataURL(file);
 }
-
 function removeImage(e) {
-  e.stopPropagation();
-  e.preventDefault();
+  e.stopPropagation(); e.preventDefault();
   imageBase64 = null;
   document.getElementById('fileInput').value = '';
   document.getElementById('uploadPrompt').style.display = 'block';
   document.getElementById('uploadPreview').style.display = 'none';
 }
-
-function dragOver(e) {
-  e.preventDefault();
-  document.getElementById('uploadArea').classList.add('drag-over');
-}
-function dragLeave() {
-  document.getElementById('uploadArea').classList.remove('drag-over');
-}
+function dragOver(e) { e.preventDefault(); document.getElementById('uploadArea').classList.add('drag-over'); }
+function dragLeave() { document.getElementById('uploadArea').classList.remove('drag-over'); }
 function dropFile(e) {
-  e.preventDefault();
-  dragLeave();
+  e.preventDefault(); dragLeave();
   const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) handleFile(file);
+  if (file?.type.startsWith('image/')) handleFile(file);
 }
 
-// Presets
 function togglePreset(btn, label) {
   btn.classList.toggle('selected');
-  if (btn.classList.contains('selected')) {
-    selectedPresets.push(label);
-  } else {
-    selectedPresets = selectedPresets.filter(p => p !== label);
-  }
+  selectedPresets = btn.classList.contains('selected')
+    ? [...selectedPresets, label]
+    : selectedPresets.filter(p => p !== label);
 }
 
-// Build prompt
+function updateSliderVal(v) { document.getElementById('sliderVal').textContent = v; }
+
 function buildPrompt() {
   const parts = [...selectedPresets];
   const custom = document.getElementById('customPrompt').value.trim();
   if (custom) parts.push(custom);
-  if (parts.length === 0) return 'The person moves naturally';
-  return parts.join('、') + 'している人物の動画';
+  return parts.length ? parts.join('、') + 'している人物の動画' : 'The person moves naturally';
 }
 
-// Generate
 async function generate() {
   const apiKey = localStorage.getItem(`apiKey_${provider}`) || document.getElementById('apiKeyInput').value.trim();
-  if (!apiKey) { showError('APIキーを入力して保存してください'); return; }
+  if (!apiKey) { showError('APIキー/トークンを入力して保存してください'); return; }
   if (!imageBase64) { showError('画像をアップロードしてください'); return; }
 
   hideError();
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('resultArea').style.display = 'none';
-  showProgress(0, '動画生成リクエストを送信中...');
 
+  if (provider === 'huggingface') {
+    await generateHF(apiKey);
+  } else {
+    await generateAsync(apiKey);
+  }
+}
+
+async function generateHF(apiKey) {
+  showProgress(10, 'Hugging Faceに送信中...');
+  const motionBucket = document.getElementById('motionSlider').value;
+  try {
+    // Fake progress animation while waiting
+    let fake = 10;
+    const fakeTimer = setInterval(() => {
+      fake = Math.min(fake + 1, 88);
+      showProgress(fake, fake < 30 ? 'モデル起動中（初回は時間がかかります）...' : fake < 60 ? '動画を生成中...' : 'もうすぐ完成...');
+    }, 2000);
+
+    const res = await fetch('/api/generate/huggingface', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, motionBucket, imageBase64 }),
+    });
+    clearInterval(fakeTimer);
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || '生成に失敗しました');
+
+    showProgress(100, '完成！');
+    setTimeout(() => {
+      hideProgress();
+      // HF returns base64 video
+      const blob = b64toBlob(data.videoBase64, data.mimeType || 'video/mp4');
+      const url = URL.createObjectURL(blob);
+      showResult(url, blob);
+      document.getElementById('generateBtn').disabled = false;
+    }, 600);
+  } catch (err) {
+    hideProgress();
+    showError(err.message);
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function b64toBlob(b64, mimeType) {
+  const byteStr = atob(b64);
+  const arr = new Uint8Array(byteStr.length);
+  for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+  return new Blob([arr], { type: mimeType });
+}
+
+async function generateAsync(apiKey) {
   const prompt = buildPrompt();
   const ratio = document.getElementById('ratioSelect').value;
   const duration = document.getElementById('durationSelect').value;
-
+  showProgress(5, '動画生成リクエストを送信中...');
   try {
     const res = await fetch(`/api/generate/${provider}`, {
       method: 'POST',
@@ -349,8 +401,7 @@ async function generate() {
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || '生成リクエスト失敗');
-
-    showProgress(5, 'タスクを受け付けました。処理中...');
+    showProgress(8, 'タスク受付完了。処理中...');
     pollStatus(data.taskId, apiKey);
   } catch (err) {
     hideProgress();
@@ -361,75 +412,43 @@ async function generate() {
 
 function pollStatus(taskId, apiKey) {
   let attempts = 0;
-  const maxAttempts = 120; // 4 min max
-
   pollTimer = setInterval(async () => {
-    attempts++;
-    if (attempts > maxAttempts) {
+    if (++attempts > 150) {
       clearInterval(pollTimer);
       hideProgress();
-      showError('タイムアウトしました。しばらくしてから再試行してください。');
+      showError('タイムアウトしました。再試行してください。');
       document.getElementById('generateBtn').disabled = false;
       return;
     }
-
     try {
       const res = await fetch(`/api/status/${provider}/${taskId}?apiKey=${encodeURIComponent(apiKey)}`);
       const data = await res.json();
-
-      if (data.error && data.status !== 'RUNNING' && data.status !== 'PENDING') {
-        clearInterval(pollTimer);
-        hideProgress();
-        showError(data.error);
-        document.getElementById('generateBtn').disabled = false;
-        return;
-      }
-
-      const pct = Math.min(95, (data.progress || 0) * 100 || Math.min(attempts * 1.5, 90));
-      const statusText = {
-        'PENDING': '待機中...',
-        'RUNNING': '動画を生成中...',
-        'SUCCEEDED': '完成！',
-        'FAILED': '失敗',
-      }[data.status] || '処理中...';
-      showProgress(pct, statusText);
+      const pct = Math.min(95, (data.progress || 0) * 100 || Math.min(attempts * 1.2, 90));
+      const msg = { PENDING: '待機中...', RUNNING: '動画を生成中...', SUCCEEDED: '完成！', FAILED: '失敗' }[data.status] || '処理中...';
+      showProgress(pct, msg);
 
       if (data.status === 'SUCCEEDED' && data.videoUrl) {
         clearInterval(pollTimer);
         showProgress(100, '完成！');
-        setTimeout(() => {
-          hideProgress();
-          showResult(data.videoUrl);
-          document.getElementById('generateBtn').disabled = false;
-        }, 800);
+        setTimeout(() => { hideProgress(); showResult(data.videoUrl, null); document.getElementById('generateBtn').disabled = false; }, 600);
       } else if (data.status === 'FAILED') {
         clearInterval(pollTimer);
         hideProgress();
         showError(data.error || '生成に失敗しました');
         document.getElementById('generateBtn').disabled = false;
       }
-    } catch (e) {
-      // network error, keep polling
-    }
+    } catch (_) {}
   }, 2000);
 }
 
-function showProgress(pct, msg) {
-  document.getElementById('progressArea').style.display = 'block';
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('progressStatus').innerHTML = `<span class="spinner"></span>${msg}`;
-}
-function hideProgress() {
-  document.getElementById('progressArea').style.display = 'none';
-}
-
-function showResult(url) {
+let currentBlob = null;
+function showResult(url, blob) {
   currentVideoUrl = url;
+  currentBlob = blob;
   document.getElementById('resultVideo').src = url;
   document.getElementById('resultArea').style.display = 'block';
   document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
 }
-
 function downloadVideo() {
   if (!currentVideoUrl) return;
   const a = document.createElement('a');
@@ -437,24 +456,26 @@ function downloadVideo() {
   a.download = `ai-video-${Date.now()}.mp4`;
   a.click();
 }
-
-function resetAll() {
+function resetResult() {
   document.getElementById('resultArea').style.display = 'none';
   document.getElementById('resultVideo').src = '';
   currentVideoUrl = null;
-  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function showProgress(pct, msg) {
+  document.getElementById('progressArea').style.display = 'block';
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressStatus').innerHTML = `<span class="spinner"></span>${msg}`;
+}
+function hideProgress() { document.getElementById('progressArea').style.display = 'none'; }
 function showError(msg) {
   const box = document.getElementById('errorBox');
-  box.textContent = '⚠️ ' + msg;
+  box.innerHTML = '⚠️ ' + msg;
   box.style.display = 'block';
   box.scrollIntoView({ behavior: 'smooth' });
 }
-function hideError() {
-  document.getElementById('errorBox').style.display = 'none';
-}
+function hideError() { document.getElementById('errorBox').style.display = 'none'; }
 </script>
 </body>
 </html>
