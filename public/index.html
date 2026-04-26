@@ -350,7 +350,7 @@ function buildPrompt() {
 }
 
 async function generate() {
-  const apiKey = localStorage.getItem(`apiKey_${provider}`) || document.getElementById('apiKeyInput').value.trim();
+  const apiKey = (localStorage.getItem(`apiKey_${provider}`) || document.getElementById('apiKeyInput').value || '').trim();
   if (!apiKey) { showError('APIキー/トークンを入力して保存してください'); return; }
   if (!imageBase64) { showError('画像をアップロードしてください'); return; }
 

@@ -13,26 +13,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Stable Video Diffusion img2vid
 app.post('/api/generate/replicate', async (req, res) => {
   try {
-    const { apiKey, imageBase64, motionBucket = 127 } = req.body;
+    const { apiKey: rawKey, imageBase64, motionBucket = 127 } = req.body;
+    const apiKey = (rawKey || '').trim();
     if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
     if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
 
     const response = await axios.post(
-      'https://api.replicate.com/v1/models/stability-ai/stable-video-diffusion/predictions',
-      { input: { input_image: imageBase64, motion_bucket_id: parseInt(motionBucket), fps: 7 } },
+      'https://api.replicate.com/v1/predictions',
       {
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait=5' },
+        version: '3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438',
+        input: { input_image: imageBase64, motion_bucket_id: parseInt(motionBucket), fps: 7 },
+      },
+      {
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         timeout: 30000,
+        validateStatus: () => true,
       }
     );
+    console.log('Replicate response status:', response.status, JSON.stringify(response.data).slice(0, 300));
+    if (response.status >= 400) {
+      const detail = response.data?.detail || response.data?.error || JSON.stringify(response.data);
+      return res.status(500).json({ error: `Replicate (${response.status}): ${detail}` });
+    }
     const pred = response.data;
     if (pred.status === 'succeeded' && pred.output?.[0]) {
       return res.json({ taskId: pred.id, provider: 'replicate', videoUrl: pred.output[0] });
     }
     res.json({ taskId: pred.id, provider: 'replicate' });
   } catch (err) {
-    const detail = err.response?.data?.detail || err.response?.data?.error || err.message;
-    res.status(500).json({ error: String(detail) });
+    console.error('Replicate error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
