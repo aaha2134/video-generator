@@ -9,58 +9,51 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Hugging Face (無料) ──────────────────────────────────────────────
-// Stable Video Diffusion img2vid-xt
-app.post('/api/generate/huggingface', async (req, res) => {
+// ── Replicate (無料クレジットあり) ───────────────────────────────────
+// Stable Video Diffusion img2vid
+app.post('/api/generate/replicate', async (req, res) => {
   try {
-    const { apiKey, imageBase64, motionBucket = 100 } = req.body;
+    const { apiKey, imageBase64, motionBucket = 127 } = req.body;
     if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
     if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
 
-    const b64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
-    const imageBuffer = Buffer.from(b64, 'base64');
-
-    const HF_MODEL = 'https://api-inference.huggingface.co/models/stabilityai/stable-video-diffusion-img2vid-xt';
-    const maxRetries = 25;
-
-    for (let i = 0; i < maxRetries; i++) {
-      const resp = await axios.post(HF_MODEL,
-        { inputs: imageBase64, parameters: { motion_bucket_id: parseInt(motionBucket) } },
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'x-use-cache': 'false',
-          },
-          responseType: 'arraybuffer',
-          timeout: 300000,
-          validateStatus: s => s < 600,
-        }
-      );
-
-      if (resp.status === 200) {
-        const videoBase64 = Buffer.from(resp.data).toString('base64');
-        return res.json({ videoBase64, mimeType: 'video/mp4' });
-      } else if (resp.status === 503) {
-        let wait = 20000;
-        try {
-          const errData = JSON.parse(Buffer.from(resp.data).toString());
-          if (errData.estimated_time) wait = Math.min(errData.estimated_time * 1000, 60000);
-        } catch (_) {}
-        await new Promise(r => setTimeout(r, wait));
-      } else {
-        let rawBody = '';
-        try { rawBody = Buffer.from(resp.data).toString(); } catch (_) {}
-        let errMsg = rawBody;
-        try {
-          const parsed = JSON.parse(rawBody);
-          errMsg = parsed.error || parsed.message || rawBody;
-        } catch (_) {}
-        console.error(`HF API error ${resp.status}:`, rawBody);
-        return res.status(500).json({ error: `HF API (${resp.status}): ${errMsg}` });
+    const response = await axios.post(
+      'https://api.replicate.com/v1/models/stability-ai/stable-video-diffusion/predictions',
+      { input: { input_image: imageBase64, motion_bucket_id: parseInt(motionBucket), fps: 7 } },
+      {
+        headers: { Authorization: `Token ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait=5' },
+        timeout: 30000,
       }
+    );
+    const pred = response.data;
+    if (pred.status === 'succeeded' && pred.output?.[0]) {
+      return res.json({ taskId: pred.id, provider: 'replicate', videoUrl: pred.output[0] });
     }
-    return res.status(500).json({ error: 'タイムアウト：モデルが起動しませんでした。しばらくしてから再試行してください' });
+    res.json({ taskId: pred.id, provider: 'replicate' });
+  } catch (err) {
+    const detail = err.response?.data?.detail || err.response?.data?.error || err.message;
+    res.status(500).json({ error: String(detail) });
+  }
+});
+
+app.get('/api/status/replicate/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { apiKey } = req.query;
+    if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
+
+    const response = await axios.get(
+      `https://api.replicate.com/v1/predictions/${taskId}`,
+      { headers: { Authorization: `Token ${apiKey}` }, timeout: 15000 }
+    );
+    const pred = response.data;
+    const statusMap = { starting: 'PENDING', processing: 'RUNNING', succeeded: 'SUCCEEDED', failed: 'FAILED', canceled: 'FAILED' };
+    res.json({
+      status: statusMap[pred.status] || 'PENDING',
+      progress: pred.status === 'succeeded' ? 100 : pred.status === 'processing' ? 50 : 5,
+      videoUrl: pred.output?.[0] || null,
+      error: pred.error || null,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
