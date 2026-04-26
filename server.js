@@ -112,7 +112,7 @@ app.post('/api/generate/replicate', async (req, res) => {
         input: { input_image: imageBase64, motion_bucket_id: parseInt(motionBucket), fps: 7 },
       },
       {
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Token ${apiKey}`, 'Content-Type': 'application/json' },
         timeout: 30000,
         validateStatus: () => true,
       }
@@ -141,7 +141,7 @@ app.get('/api/status/replicate/:taskId', async (req, res) => {
 
     const response = await axios.get(
       `https://api.replicate.com/v1/predictions/${taskId}`,
-      { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 15000 }
+      { headers: { Authorization: `Token ${apiKey}` }, timeout: 15000 }
     );
     const pred = response.data;
     const statusMap = { starting: 'PENDING', processing: 'RUNNING', succeeded: 'SUCCEEDED', failed: 'FAILED', canceled: 'FAILED' };

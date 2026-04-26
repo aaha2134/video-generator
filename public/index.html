@@ -114,11 +114,11 @@
   <div class="card">
     <h2>サービス選択</h2>
     <div class="provider-tabs">
-      <button class="provider-tab active" onclick="setProvider('huggingface')" id="tab-huggingface">
-        🤗 Hugging Face <span class="badge-free">無料</span>
-      </button>
-      <button class="provider-tab" onclick="setProvider('replicate')" id="tab-replicate">
+      <button class="provider-tab active" onclick="setProvider('replicate')" id="tab-replicate">
         🔁 Replicate <span class="badge-free">無料枠あり</span>
+      </button>
+      <button class="provider-tab" onclick="setProvider('huggingface')" id="tab-huggingface">
+        🤗 Hugging Face <span class="badge-paid">有料</span>
       </button>
       <button class="provider-tab" onclick="setProvider('fal')" id="tab-fal">
         ⚡ fal.ai <span class="badge-free">無料枠あり</span>
@@ -131,9 +131,9 @@
       </button>
     </div>
 
-    <div id="hf-notice" class="free-notice" style="margin-bottom:14px;">
-      <strong>完全無料！</strong> huggingface.co で無料アカウントを作り、<strong>Settings → Access Tokens</strong> でトークンを取得（クレジットカード不要）。<br>
-      ※ 公開Spaceを経由してStable Video Diffusionを使用します。
+    <div id="hf-notice" style="margin-bottom:14px; background:#fb923c10; border:1px solid #fb923c40; border-radius:8px; padding:12px 14px; font-size:13px; color:#fdba74; line-height:1.6;">
+      <strong style="color:#fb923c;">⚠️ Proプラン（$9/月）が必要です。</strong> HuggingFaceの動画生成APIはPro以上のプランが必要です。<br>
+      無料で試すには <strong>Replicate</strong>（$5クレジット付き）または <strong>fal.ai</strong>（$10クレジット付き）をご利用ください。
     </div>
     <div id="replicate-notice" class="free-notice" style="margin-bottom:14px; display:none;">
       <strong>無料枠で使えます！</strong> replicate.com で無料アカウントを作り、<strong>Account → API tokens</strong> でトークンを取得（$5分の無料クレジット付き）。<br>
@@ -255,7 +255,7 @@
 </div>
 
 <script>
-let provider = 'huggingface';
+let provider = 'replicate';
 let imageBase64 = null;
 let selectedPresets = [];
 let pollTimer = null;
@@ -299,7 +299,7 @@ function saveApiKey() {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('apiKey_huggingface') || '';
+  const saved = localStorage.getItem('apiKey_replicate') || '';
   document.getElementById('apiKeyInput').value = saved;
 });
 
