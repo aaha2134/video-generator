@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI動画ジェネレーター</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f13; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  header { background: #1a1a24; border-bottom: 1px solid #2d2d3d; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header span { font-size: 13px; color: #64748b; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 24px; }
+
+  .card { background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 12px; padding: 24px; }
+  .card h2 { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+
+  /* API settings */
+  .api-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  .provider-tabs { display: flex; gap: 8px; }
+  .provider-tab { padding: 8px 16px; border-radius: 8px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .provider-tab.active { background: #a78bfa20; border-color: #a78bfa; color: #a78bfa; }
+  input[type="text"], input[type="password"] { width: 100%; background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: #a78bfa; }
+  .btn-save { padding: 10px 20px; background: #a78bfa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .btn-save:hover { background: #9061f9; }
+  .saved-note { font-size: 12px; color: #4ade80; margin-top: 8px; display: none; }
+
+  /* Upload area */
+  .upload-area { border: 2px dashed #2d2d3d; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .upload-area:hover, .upload-area.drag-over { border-color: #a78bfa; background: #a78bfa08; }
+  .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 48px; margin-bottom: 12px; }
+  .upload-area p { color: #64748b; font-size: 14px; }
+  .upload-area p strong { color: #a78bfa; }
+  .preview-wrap { position: relative; display: inline-block; margin-top: 16px; }
+  .preview-wrap img { max-height: 300px; max-width: 100%; border-radius: 8px; display: block; }
+  .preview-wrap .remove-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #ef4444; border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+
+  /* Motion settings */
+  .motion-section { display: grid; gap: 16px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; }
+  .preset-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #2d2d3d; background: transparent; color: #94a3b8; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .preset-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+  .preset-btn.selected { background: #60a5fa20; border-color: #60a5fa; color: #60a5fa; }
+  .custom-prompt { margin-top: 8px; }
+  label { font-size: 13px; color: #94a3b8; display: block; margin-bottom: 6px; }
+  textarea { width: 100%; background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none; resize: vertical; min-height: 80px; transition: border-color 0.2s; }
+  textarea:focus { border-color: #a78bfa; }
+
+  /* Options row */
+  .options-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .option-group { display: flex; flex-direction: column; gap: 8px; }
+  select { background: #0f0f13; border: 1px solid #2d2d3d; border-radius: 8px; padding: 8px 12px; color: #e2e8f0; font-size: 14px; outline: none; cursor: pointer; }
+  select:focus { border-color: #a78bfa; }
+
+  /* Generate button */
+  .generate-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a78bfa, #60a5fa); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .generate-btn:hover { opacity: 0.9; }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Progress */
+  .progress-area { display: none; }
+  .progress-bar-wrap { background: #0f0f13; border-radius: 99px; height: 8px; overflow: hidden; margin: 12px 0; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #a78bfa, #60a5fa); border-radius: 99px; width: 0%; transition: width 0.5s; }
+  .progress-status { font-size: 13px; color: #94a3b8; text-align: center; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2d2d3d; border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result */
+  .result-area { display: none; }
+  .result-area video { width: 100%; border-radius: 8px; background: #000; }
+  .result-actions { display: flex; gap: 12px; margin-top: 12px; }
+  .btn-dl { flex: 1; padding: 12px; background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 8px; color: #e2e8f0; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+  .btn-dl:hover { border-color: #a78bfa; color: #a78bfa; }
+  .btn-new { flex: 1; padding: 12px; background: #a78bfa20; border: 1px solid #a78bfa; border-radius: 8px; color: #a78bfa; cursor: pointer; font-size: 14px; font-weight: 600; }
+
+  /* Error */
+  .error-box { background: #ef444420; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #ef4444; font-size: 14px; display: none; margin-top: 12px; }
+
+  /* How to use */
+  .howto { background: #1a1a2480; border: 1px solid #2d2d3d40; border-radius: 12px; padding: 20px 24px; }
+  .howto h3 { font-size: 13px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .howto ul { list-style: none; display: grid; gap: 8px; }
+  .howto li { font-size: 13px; color: #64748b; display: flex; gap: 10px; }
+  .howto li::before { content: '→'; color: #a78bfa; }
+
+  @media (max-width: 600px) {
+    .api-row { grid-template-columns: 1fr; }
+    .options-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 AI動画ジェネレーター</h1>
+  <span>人物写真 → 10秒動画</span>
+</header>
+
+<div class="container">
+
+  <!-- API Settings -->
+  <div class="card">
+    <h2>APIキー設定</h2>
+    <div class="provider-tabs" style="margin-bottom:14px;">
+      <button class="provider-tab active" onclick="setProvider('runway')" id="tab-runway">Runway Gen-3</button>
+      <button class="provider-tab" onclick="setProvider('kling')" id="tab-kling">Kling AI</button>
+    </div>
+    <div class="api-row">
+      <span id="api-label" style="font-size:13px;color:#94a3b8;white-space:nowrap;">Runway APIキー</span>
+      <input type="password" id="apiKeyInput" placeholder="APIキーを入力..." autocomplete="off">
+      <button class="btn-save" onclick="saveApiKey()">保存</button>
+    </div>
+    <div class="saved-note" id="savedNote">✓ 保存しました</div>
+    <div style="margin-top:10px;font-size:12px;color:#475569;">
+      APIキーはブラウザのローカルストレージにのみ保存されます（サーバーには送信されません）
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <h2>画像アップロード</h2>
+    <div class="upload-area" id="uploadArea" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+      <div id="uploadPrompt">
+        <div class="upload-icon">🖼️</div>
+        <p><strong>クリックまたはドラッグ</strong>して画像を選択</p>
+        <p style="margin-top:6px;">人物が写っている写真を使用してください</p>
+        <p style="margin-top:4px;font-size:12px;">PNG / JPG / WEBP・最大10MB</p>
+      </div>
+      <div id="uploadPreview" style="display:none;">
+        <div class="preview-wrap">
+          <img id="previewImg" src="" alt="preview">
+          <button class="remove-btn" onclick="removeImage(event)">×</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motion -->
+  <div class="card">
+    <h2>動きの指定</h2>
+    <div class="motion-section">
+      <div>
+        <label>プリセット（複数選択可）</label>
+        <div class="presets" id="presets">
+          <button class="preset-btn" onclick="togglePreset(this, '踊る')">💃 踊る</button>
+          <button class="preset-btn" onclick="togglePreset(this, '歩く')">🚶 歩く</button>
+          <button class="preset-btn" onclick="togglePreset(this, '手を振る')">👋 手を振る</button>
+          <button class="preset-btn" onclick="togglePreset(this, '走る')">🏃 走る</button>
+          <button class="preset-btn" onclick="togglePreset(this, 'お辞儀をする')">🙇 お辞儀</button>
+          <button class="preset-btn" onclick="togglePreset(this, 'ジャンプする')">🤸 ジャンプ</button>
+          <button class="preset-btn" onclick="togglePreset(this, '笑顔で微笑む')">😊 微笑む</button>
+          <button class="preset-btn" onclick="togglePreset(this, '振り返る')">🔄 振り返る</button>
+          <button class="preset-btn" onclick="togglePreset(this, 'カメラに向かって歩いてくる')">📷 歩み寄る</button>
+          <button class="preset-btn" onclick="togglePreset(this, 'ゆっくり回転する')">🔃 回転</button>
+        </div>
+      </div>
+      <div class="custom-prompt">
+        <label for="customPrompt">カスタム指示（日本語 or English）</label>
+        <textarea id="customPrompt" placeholder="例: 音楽に合わせてヒップホップダンスをする、笑顔でカメラに手を振りながら歩いてくる..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="card">
+    <h2>オプション</h2>
+    <div class="options-row">
+      <div class="option-group">
+        <label>アスペクト比</label>
+        <select id="ratioSelect">
+          <option value="16:9">16:9（横長・YouTube）</option>
+          <option value="9:16">9:16（縦長・TikTok/Reels）</option>
+          <option value="1:1">1:1（正方形）</option>
+        </select>
+      </div>
+      <div class="option-group" id="durationGroup">
+        <label>尺</label>
+        <select id="durationSelect">
+          <option value="5">5秒</option>
+          <option value="10" selected>10秒</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <button class="generate-btn" id="generateBtn" onclick="generate()">✨ 動画を生成する</button>
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Progress -->
+  <div class="card progress-area" id="progressArea">
+    <h2>生成中...</h2>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-status" id="progressStatus">
+      <span class="spinner"></span>待機中...
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card result-area" id="resultArea">
+    <h2>完成！</h2>
+    <video id="resultVideo" controls loop playsinline></video>
+    <div class="result-actions">
+      <button class="btn-dl" onclick="downloadVideo()">⬇️ ダウンロード</button>
+      <button class="btn-new" onclick="resetAll()">🔄 もう一度作る</button>
+    </div>
+  </div>
+
+  <!-- How to use -->
+  <div class="howto">
+    <h3>使い方</h3>
+    <ul>
+      <li>Runway Gen-3またはKling AIのAPIキーを取得して入力してください</li>
+      <li>人物が写っている画像をアップロードします（1人〜複数人OK）</li>
+      <li>プリセットまたはカスタム指示で動きを指定します</li>
+      <li>生成ボタンを押すと約60〜120秒で10秒の動画が完成します</li>
+      <li>Runway: <strong>runwayml.com</strong> でAPIキー取得 / Kling: <strong>klingai.com</strong></li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+let provider = 'runway';
+let imageBase64 = null;
+let selectedPresets = [];
+let pollTimer = null;
+let currentVideoUrl = null;
+
+// Provider
+function setProvider(p) {
+  provider = p;
+  document.getElementById('tab-runway').classList.toggle('active', p === 'runway');
+  document.getElementById('tab-kling').classList.toggle('active', p === 'kling');
+  document.getElementById('api-label').textContent = p === 'runway' ? 'Runway APIキー' : 'Kling APIキー';
+  const saved = localStorage.getItem(`apiKey_${p}`) || '';
+  document.getElementById('apiKeyInput').value = saved;
+  // Kling ratio options
+  const ratioSel = document.getElementById('ratioSelect');
+  if (p === 'kling') {
+    ratioSel.innerHTML = `
+      <option value="16:9">16:9（横長）</option>
+      <option value="9:16">9:16（縦長）</option>
+      <option value="1:1">1:1（正方形）</option>`;
+  } else {
+    ratioSel.innerHTML = `
+      <option value="1280:768">16:9（横長・YouTube）</option>
+      <option value="768:1280">9:16（縦長・TikTok）</option>
+      <option value="1:1">1:1（正方形）</option>`;
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(`apiKey_${provider}`, key);
+  const note = document.getElementById('savedNote');
+  note.style.display = 'block';
+  setTimeout(() => note.style.display = 'none', 2000);
+}
+
+// Load saved key on init
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem(`apiKey_runway`) || '';
+  document.getElementById('apiKeyInput').value = saved;
+});
+
+// File upload
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageBase64 = e.target.result;
+    document.getElementById('previewImg').src = imageBase64;
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('uploadPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  imageBase64 = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uploadPrompt').style.display = 'block';
+  document.getElementById('uploadPreview').style.display = 'none';
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.add('drag-over');
+}
+function dragLeave() {
+  document.getElementById('uploadArea').classList.remove('drag-over');
+}
+function dropFile(e) {
+  e.preventDefault();
+  dragLeave();
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleFile(file);
+}
+
+// Presets
+function togglePreset(btn, label) {
+  btn.classList.toggle('selected');
+  if (btn.classList.contains('selected')) {
+    selectedPresets.push(label);
+  } else {
+    selectedPresets = selectedPresets.filter(p => p !== label);
+  }
+}
+
+// Build prompt
+function buildPrompt() {
+  const parts = [...selectedPresets];
+  const custom = document.getElementById('customPrompt').value.trim();
+  if (custom) parts.push(custom);
+  if (parts.length === 0) return 'The person moves naturally';
+  return parts.join('、') + 'している人物の動画';
+}
+
+// Generate
+async function generate() {
+  const apiKey = localStorage.getItem(`apiKey_${provider}`) || document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey) { showError('APIキーを入力して保存してください'); return; }
+  if (!imageBase64) { showError('画像をアップロードしてください'); return; }
+
+  hideError();
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('resultArea').style.display = 'none';
+  showProgress(0, '動画生成リクエストを送信中...');
+
+  const prompt = buildPrompt();
+  const ratio = document.getElementById('ratioSelect').value;
+  const duration = document.getElementById('durationSelect').value;
+
+  try {
+    const res = await fetch(`/api/generate/${provider}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, apiKey, ratio, duration, imageBase64 }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || '生成リクエスト失敗');
+
+    showProgress(5, 'タスクを受け付けました。処理中...');
+    pollStatus(data.taskId, apiKey);
+  } catch (err) {
+    hideProgress();
+    showError(err.message);
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function pollStatus(taskId, apiKey) {
+  let attempts = 0;
+  const maxAttempts = 120; // 4 min max
+
+  pollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(pollTimer);
+      hideProgress();
+      showError('タイムアウトしました。しばらくしてから再試行してください。');
+      document.getElementById('generateBtn').disabled = false;
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/status/${provider}/${taskId}?apiKey=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+
+      if (data.error && data.status !== 'RUNNING' && data.status !== 'PENDING') {
+        clearInterval(pollTimer);
+        hideProgress();
+        showError(data.error);
+        document.getElementById('generateBtn').disabled = false;
+        return;
+      }
+
+      const pct = Math.min(95, (data.progress || 0) * 100 || Math.min(attempts * 1.5, 90));
+      const statusText = {
+        'PENDING': '待機中...',
+        'RUNNING': '動画を生成中...',
+        'SUCCEEDED': '完成！',
+        'FAILED': '失敗',
+      }[data.status] || '処理中...';
+      showProgress(pct, statusText);
+
+      if (data.status === 'SUCCEEDED' && data.videoUrl) {
+        clearInterval(pollTimer);
+        showProgress(100, '完成！');
+        setTimeout(() => {
+          hideProgress();
+          showResult(data.videoUrl);
+          document.getElementById('generateBtn').disabled = false;
+        }, 800);
+      } else if (data.status === 'FAILED') {
+        clearInterval(pollTimer);
+        hideProgress();
+        showError(data.error || '生成に失敗しました');
+        document.getElementById('generateBtn').disabled = false;
+      }
+    } catch (e) {
+      // network error, keep polling
+    }
+  }, 2000);
+}
+
+function showProgress(pct, msg) {
+  document.getElementById('progressArea').style.display = 'block';
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressStatus').innerHTML = `<span class="spinner"></span>${msg}`;
+}
+function hideProgress() {
+  document.getElementById('progressArea').style.display = 'none';
+}
+
+function showResult(url) {
+  currentVideoUrl = url;
+  document.getElementById('resultVideo').src = url;
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadVideo() {
+  if (!currentVideoUrl) return;
+  const a = document.createElement('a');
+  a.href = currentVideoUrl;
+  a.download = `ai-video-${Date.now()}.mp4`;
+  a.click();
+}
+
+function resetAll() {
+  document.getElementById('resultArea').style.display = 'none';
+  document.getElementById('resultVideo').src = '';
+  currentVideoUrl = null;
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠️ ' + msg;
+  box.style.display = 'block';
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+</script>
+</body>
+</html>
