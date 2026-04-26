@@ -114,14 +114,8 @@
   <div class="card">
     <h2>サービス選択</h2>
     <div class="provider-tabs">
-      <button class="provider-tab active" onclick="setProvider('replicate')" id="tab-replicate">
-        🔁 Replicate <span class="badge-free">無料枠あり</span>
-      </button>
-      <button class="provider-tab" onclick="setProvider('huggingface')" id="tab-huggingface">
-        🤗 Hugging Face <span class="badge-paid">有料</span>
-      </button>
-      <button class="provider-tab" onclick="setProvider('fal')" id="tab-fal">
-        ⚡ fal.ai <span class="badge-free">無料枠あり</span>
+      <button class="provider-tab active" onclick="setProvider('fal')" id="tab-fal">
+        ⚡ fal.ai <span class="badge-free">無料</span>
       </button>
       <button class="provider-tab" onclick="setProvider('runway')" id="tab-runway">
         Runway Gen-3 <span class="badge-paid">有料</span>
@@ -131,27 +125,19 @@
       </button>
     </div>
 
-    <div id="hf-notice" style="margin-bottom:14px; background:#fb923c10; border:1px solid #fb923c40; border-radius:8px; padding:12px 14px; font-size:13px; color:#fdba74; line-height:1.6;">
-      <strong style="color:#fb923c;">⚠️ Proプラン（$9/月）が必要です。</strong> HuggingFaceの動画生成APIはPro以上のプランが必要です。<br>
-      無料で試すには <strong>Replicate</strong>（$5クレジット付き）または <strong>fal.ai</strong>（$10クレジット付き）をご利用ください。
-    </div>
-    <div id="replicate-notice" class="free-notice" style="margin-bottom:14px; display:none;">
-      <strong>無料枠で使えます！</strong> replicate.com で無料アカウントを作り、<strong>Account → API tokens</strong> でトークンを取得（$5分の無料クレジット付き）。<br>
-      ※ Stable Video Diffusion モデルを使用。
-    </div>
-    <div id="fal-notice" class="free-notice" style="margin-bottom:14px; display:none;">
-      <strong>無料枠で使えます！</strong> fal.ai で無料アカウントを作り、<strong>Dashboard → API Keys</strong> でキーを取得（$10分の無料クレジット付き）。<br>
-      ※ Stable Video Diffusion（fast-svd-lcm）モデルを使用。
+    <div id="fal-notice" class="free-notice" style="margin-bottom:14px;">
+      <strong>🎉 無料で始められます！</strong> fal.ai に無料アカウントを作るだけで <strong>$10分のクレジット</strong>が付与されます（クレジットカード不要）。<br>
+      ① <a href="https://fal.ai" target="_blank" style="color:#4ade80;">fal.ai</a> でサインアップ　② Dashboard → API Keys → キーをコピー　③ 下に貼り付けて保存
     </div>
 
-    <label id="api-label">Hugging Face トークン（hf_xxxxx）</label>
+    <label id="api-label">fal.ai APIキー</label>
     <div class="input-row">
-      <input type="password" id="apiKeyInput" placeholder="hf_xxxxxxxxxxxxxxxx" autocomplete="off">
+      <input type="password" id="apiKeyInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx" autocomplete="off">
       <button class="btn-save" onclick="saveApiKey()">保存</button>
     </div>
     <div class="saved-note" id="savedNote">✓ 保存しました</div>
     <div class="hint" id="api-hint">
-      取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK
+      取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key
     </div>
   </div>
 
@@ -255,7 +241,7 @@
 </div>
 
 <script>
-let provider = 'replicate';
+let provider = 'fal';
 let imageBase64 = null;
 let selectedPresets = [];
 let pollTimer = null;
@@ -263,12 +249,10 @@ let currentVideoUrl = null;
 
 function setProvider(p) {
   provider = p;
-  ['huggingface','replicate','fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
+  ['fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
   document.getElementById('tab-'+p).classList.add('active');
 
-  const isFree = p === 'huggingface' || p === 'replicate' || p === 'fal';
-  document.getElementById('hf-notice').style.display = p === 'huggingface' ? 'block' : 'none';
-  document.getElementById('replicate-notice').style.display = p === 'replicate' ? 'block' : 'none';
+  const isFree = p === 'fal';
   document.getElementById('fal-notice').style.display = p === 'fal' ? 'block' : 'none';
   document.getElementById('motionCard').style.display = isFree ? 'none' : 'block';
   document.getElementById('intensityCard').style.display = isFree ? 'block' : 'none';
@@ -276,11 +260,9 @@ function setProvider(p) {
   document.getElementById('ratioGroup').style.display = isFree ? 'none' : 'flex';
 
   const labels = {
-    huggingface: { label: 'Hugging Face トークン（hf_xxxxx）', placeholder: 'hf_xxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK' },
-    replicate:   { label: 'Replicate APIトークン（r8_xxxxx）', placeholder: 'r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://replicate.com/account/api-tokens" target="_blank">replicate.com/account/api-tokens</a>（無料$5クレジット付き）' },
-    fal:         { label: 'fal.ai APIキー', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）' },
-    runway:      { label: 'Runway APIキー', placeholder: 'rw_xxxxxxxxxx', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
-    kling:       { label: 'Kling APIキー', placeholder: 'xxxxxxxxxx', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
+    fal:    { label: 'fal.ai APIキー', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key' },
+    runway: { label: 'Runway APIキー', placeholder: 'rw_xxxxxxxxxx', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
+    kling:  { label: 'Kling AIキー', placeholder: 'xxxxxxxxxx', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
   };
   document.getElementById('api-label').textContent = labels[p].label;
   document.getElementById('apiKeyInput').placeholder = labels[p].placeholder;
@@ -299,7 +281,7 @@ function saveApiKey() {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('apiKey_replicate') || '';
+  const saved = localStorage.getItem('apiKey_fal') || '';
   document.getElementById('apiKeyInput').value = saved;
 });
 
