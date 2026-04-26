@@ -24,17 +24,19 @@ app.post('/api/generate/huggingface', async (req, res) => {
     const maxRetries = 25;
 
     for (let i = 0; i < maxRetries; i++) {
-      const resp = await axios.post(HF_MODEL, imageBuffer, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/octet-stream',
-          'x-use-cache': 'false',
-        },
-        params: { motion_bucket_id: parseInt(motionBucket) },
-        responseType: 'arraybuffer',
-        timeout: 300000,
-        validateStatus: s => s < 600,
-      });
+      const resp = await axios.post(HF_MODEL,
+        { inputs: imageBase64, parameters: { motion_bucket_id: parseInt(motionBucket) } },
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'x-use-cache': 'false',
+          },
+          responseType: 'arraybuffer',
+          timeout: 300000,
+          validateStatus: s => s < 600,
+        }
+      );
 
       if (resp.status === 200) {
         const videoBase64 = Buffer.from(resp.data).toString('base64');
@@ -47,9 +49,15 @@ app.post('/api/generate/huggingface', async (req, res) => {
         } catch (_) {}
         await new Promise(r => setTimeout(r, wait));
       } else {
-        let errMsg = '生成に失敗しました';
-        try { errMsg = JSON.parse(Buffer.from(resp.data).toString()).error || errMsg; } catch (_) {}
-        return res.status(500).json({ error: errMsg });
+        let rawBody = '';
+        try { rawBody = Buffer.from(resp.data).toString(); } catch (_) {}
+        let errMsg = rawBody;
+        try {
+          const parsed = JSON.parse(rawBody);
+          errMsg = parsed.error || parsed.message || rawBody;
+        } catch (_) {}
+        console.error(`HF API error ${resp.status}:`, rawBody);
+        return res.status(500).json({ error: `HF API (${resp.status}): ${errMsg}` });
       }
     }
     return res.status(500).json({ error: 'タイムアウト：モデルが起動しませんでした。しばらくしてから再試行してください' });
