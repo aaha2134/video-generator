@@ -9,6 +9,88 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Hugging Face Space (無料) ────────────────────────────────────────
+// multimodalart/stable-video-diffusion の公開SpaceをGradio APIで呼ぶ
+app.post('/api/generate/huggingface', async (req, res) => {
+  try {
+    const { apiKey: rawKey, imageBase64, motionBucket = 100 } = req.body;
+    const apiKey = (rawKey || '').trim();
+    if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
+    if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
+
+    // HF Space の Gradio API (queue/join → queue/data)
+    const SPACE = 'https://multimodalart-stable-video-diffusion.hf.space';
+    const sessionHash = Math.random().toString(36).slice(2);
+
+    const joinRes = await axios.post(
+      `${SPACE}/queue/join`,
+      {
+        fn_index: 0,
+        data: [imageBase64, parseInt(motionBucket), 25, 7, 0.02],
+        session_hash: sessionHash,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+        validateStatus: () => true,
+      }
+    );
+
+    if (joinRes.status >= 400) {
+      const errMsg = joinRes.data?.detail || joinRes.data?.error || JSON.stringify(joinRes.data);
+      console.error('HF Space join error:', joinRes.status, errMsg);
+      return res.status(500).json({ error: `HF Space (${joinRes.status}): ${errMsg}` });
+    }
+
+    const eventId = joinRes.data?.event_id;
+    if (!eventId) {
+      console.error('HF Space no event_id:', JSON.stringify(joinRes.data));
+      return res.status(500).json({ error: 'HF Space: イベントIDが取得できませんでした' });
+    }
+
+    res.json({ taskId: eventId, provider: 'huggingface', sessionHash });
+  } catch (err) {
+    console.error('HF generate error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/status/huggingface/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { apiKey: rawKey, sessionHash } = req.query;
+    const apiKey = (rawKey || '').trim();
+
+    const SPACE = 'https://multimodalart-stable-video-diffusion.hf.space';
+    const statusRes = await axios.get(
+      `${SPACE}/queue/status?session_hash=${sessionHash}`,
+      {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        timeout: 15000,
+        validateStatus: () => true,
+      }
+    );
+
+    const data = statusRes.data;
+    if (data?.msg === 'process_completed') {
+      const videoUrl = data?.output?.data?.[0]?.url || data?.output?.data?.[0] || null;
+      return res.json({ status: 'SUCCEEDED', progress: 100, videoUrl });
+    } else if (data?.msg === 'queue_full') {
+      return res.json({ status: 'FAILED', error: 'キューが満杯です。しばらくしてから再試行してください' });
+    } else if (data?.msg === 'process_starts' || data?.msg === 'estimation') {
+      const rank = data?.rank ?? '?';
+      return res.json({ status: 'PENDING', progress: 10, videoUrl: null, queuePos: rank });
+    } else {
+      return res.json({ status: 'RUNNING', progress: 50, videoUrl: null });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Replicate (無料クレジットあり) ───────────────────────────────────
 // Stable Video Diffusion img2vid
 app.post('/api/generate/replicate', async (req, res) => {

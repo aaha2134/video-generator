@@ -114,7 +114,10 @@
   <div class="card">
     <h2>サービス選択</h2>
     <div class="provider-tabs">
-      <button class="provider-tab active" onclick="setProvider('replicate')" id="tab-replicate">
+      <button class="provider-tab active" onclick="setProvider('huggingface')" id="tab-huggingface">
+        🤗 Hugging Face <span class="badge-free">無料</span>
+      </button>
+      <button class="provider-tab" onclick="setProvider('replicate')" id="tab-replicate">
         🔁 Replicate <span class="badge-free">無料枠あり</span>
       </button>
       <button class="provider-tab" onclick="setProvider('fal')" id="tab-fal">
@@ -128,7 +131,11 @@
       </button>
     </div>
 
-    <div id="replicate-notice" class="free-notice" style="margin-bottom:14px;">
+    <div id="hf-notice" class="free-notice" style="margin-bottom:14px;">
+      <strong>完全無料！</strong> huggingface.co で無料アカウントを作り、<strong>Settings → Access Tokens</strong> でトークンを取得（クレジットカード不要）。<br>
+      ※ 公開Spaceを経由してStable Video Diffusionを使用します。
+    </div>
+    <div id="replicate-notice" class="free-notice" style="margin-bottom:14px; display:none;">
       <strong>無料枠で使えます！</strong> replicate.com で無料アカウントを作り、<strong>Account → API tokens</strong> でトークンを取得（$5分の無料クレジット付き）。<br>
       ※ Stable Video Diffusion モデルを使用。
     </div>
@@ -137,14 +144,14 @@
       ※ Stable Video Diffusion（fast-svd-lcm）モデルを使用。
     </div>
 
-    <label id="api-label">Replicate APIトークン（r8_xxxxx）</label>
+    <label id="api-label">Hugging Face トークン（hf_xxxxx）</label>
     <div class="input-row">
       <input type="password" id="apiKeyInput" placeholder="hf_xxxxxxxxxxxxxxxx" autocomplete="off">
       <button class="btn-save" onclick="saveApiKey()">保存</button>
     </div>
     <div class="saved-note" id="savedNote">✓ 保存しました</div>
     <div class="hint" id="api-hint">
-      取得先: <a href="https://replicate.com/account/api-tokens" target="_blank">replicate.com/account/api-tokens</a>（無料アカウントで$5クレジット付き）
+      取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK
     </div>
   </div>
 
@@ -248,7 +255,7 @@
 </div>
 
 <script>
-let provider = 'replicate';
+let provider = 'huggingface';
 let imageBase64 = null;
 let selectedPresets = [];
 let pollTimer = null;
@@ -256,10 +263,11 @@ let currentVideoUrl = null;
 
 function setProvider(p) {
   provider = p;
-  ['replicate','fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
+  ['huggingface','replicate','fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
   document.getElementById('tab-'+p).classList.add('active');
 
-  const isFree = p === 'replicate' || p === 'fal';
+  const isFree = p === 'huggingface' || p === 'replicate' || p === 'fal';
+  document.getElementById('hf-notice').style.display = p === 'huggingface' ? 'block' : 'none';
   document.getElementById('replicate-notice').style.display = p === 'replicate' ? 'block' : 'none';
   document.getElementById('fal-notice').style.display = p === 'fal' ? 'block' : 'none';
   document.getElementById('motionCard').style.display = isFree ? 'none' : 'block';
@@ -268,10 +276,11 @@ function setProvider(p) {
   document.getElementById('ratioGroup').style.display = isFree ? 'none' : 'flex';
 
   const labels = {
-    replicate: { label: 'Replicate APIトークン（r8_xxxxx）', placeholder: 'r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://replicate.com/account/api-tokens" target="_blank">replicate.com/account/api-tokens</a>（無料$5クレジット付き）' },
-    fal:       { label: 'fal.ai APIキー', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）' },
-    runway:    { label: 'Runway APIキー', placeholder: 'rw_xxxxxxxxxx', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
-    kling:     { label: 'Kling APIキー', placeholder: 'xxxxxxxxxx', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
+    huggingface: { label: 'Hugging Face トークン（hf_xxxxx）', placeholder: 'hf_xxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK' },
+    replicate:   { label: 'Replicate APIトークン（r8_xxxxx）', placeholder: 'r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://replicate.com/account/api-tokens" target="_blank">replicate.com/account/api-tokens</a>（無料$5クレジット付き）' },
+    fal:         { label: 'fal.ai APIキー', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）' },
+    runway:      { label: 'Runway APIキー', placeholder: 'rw_xxxxxxxxxx', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
+    kling:       { label: 'Kling APIキー', placeholder: 'xxxxxxxxxx', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
   };
   document.getElementById('api-label').textContent = labels[p].label;
   document.getElementById('apiKeyInput').placeholder = labels[p].placeholder;
@@ -290,7 +299,7 @@ function saveApiKey() {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('apiKey_replicate') || '';
+  const saved = localStorage.getItem('apiKey_huggingface') || '';
   document.getElementById('apiKeyInput').value = saved;
 });
 
@@ -382,7 +391,7 @@ async function generateAsync(apiKey) {
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || '生成リクエスト失敗');
     showProgress(8, 'タスク受付完了。処理中...');
-    pollStatus(data.taskId, apiKey);
+    pollStatus(data.taskId, apiKey, data.sessionHash);
   } catch (err) {
     hideProgress();
     showError(err.message);
@@ -390,7 +399,7 @@ async function generateAsync(apiKey) {
   }
 }
 
-function pollStatus(taskId, apiKey) {
+function pollStatus(taskId, apiKey, sessionHash) {
   let attempts = 0;
   pollTimer = setInterval(async () => {
     if (++attempts > 150) {
@@ -402,8 +411,8 @@ function pollStatus(taskId, apiKey) {
     }
     try {
       const modelParam = provider === 'fal' ? '&model=fal-ai/fast-svd-lcm' : '';
-
-      const res = await fetch(`/api/status/${provider}/${taskId}?apiKey=${encodeURIComponent(apiKey)}${modelParam}`);
+      const sessionParam = sessionHash ? `&sessionHash=${encodeURIComponent(sessionHash)}` : '';
+      const res = await fetch(`/api/status/${provider}/${taskId}?apiKey=${encodeURIComponent(apiKey)}${modelParam}${sessionParam}`);
       const data = await res.json();
       const pct = Math.min(95, (data.progress || 0) * 100 || Math.min(attempts * 1.2, 90));
       const msg = { PENDING: '待機中...', RUNNING: '動画を生成中...', SUCCEEDED: '完成！', FAILED: '失敗' }[data.status] || '処理中...';
