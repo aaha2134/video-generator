@@ -9,6 +9,55 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Hugging Face (無料) ──────────────────────────────────────────────
+// Stable Video Diffusion img2vid-xt
+app.post('/api/generate/huggingface', async (req, res) => {
+  try {
+    const { apiKey, imageBase64, motionBucket = 100 } = req.body;
+    if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
+    if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
+
+    const b64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    const imageBuffer = Buffer.from(b64, 'base64');
+
+    const HF_MODEL = 'https://api-inference.huggingface.co/models/stabilityai/stable-video-diffusion-img2vid-xt';
+    const maxRetries = 25;
+
+    for (let i = 0; i < maxRetries; i++) {
+      const resp = await axios.post(HF_MODEL, imageBuffer, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/octet-stream',
+          'x-use-cache': 'false',
+        },
+        params: { motion_bucket_id: parseInt(motionBucket) },
+        responseType: 'arraybuffer',
+        timeout: 300000,
+        validateStatus: s => s < 600,
+      });
+
+      if (resp.status === 200) {
+        const videoBase64 = Buffer.from(resp.data).toString('base64');
+        return res.json({ videoBase64, mimeType: 'video/mp4' });
+      } else if (resp.status === 503) {
+        let wait = 20000;
+        try {
+          const errData = JSON.parse(Buffer.from(resp.data).toString());
+          if (errData.estimated_time) wait = Math.min(errData.estimated_time * 1000, 60000);
+        } catch (_) {}
+        await new Promise(r => setTimeout(r, wait));
+      } else {
+        let errMsg = '生成に失敗しました';
+        try { errMsg = JSON.parse(Buffer.from(resp.data).toString()).error || errMsg; } catch (_) {}
+        return res.status(500).json({ error: errMsg });
+      }
+    }
+    return res.status(500).json({ error: 'タイムアウト：モデルが起動しませんでした。しばらくしてから再試行してください' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── fal.ai (無料クレジットあり) ──────────────────────────────────────
 // fast-svd-lcm: Stable Video Diffusion の高速版
 app.post('/api/generate/fal', async (req, res) => {

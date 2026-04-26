@@ -114,7 +114,10 @@
   <div class="card">
     <h2>サービス選択</h2>
     <div class="provider-tabs">
-      <button class="provider-tab active" onclick="setProvider('fal')" id="tab-fal">
+      <button class="provider-tab active" onclick="setProvider('huggingface')" id="tab-huggingface">
+        🤗 Hugging Face <span class="badge-free">無料</span>
+      </button>
+      <button class="provider-tab" onclick="setProvider('fal')" id="tab-fal">
         ⚡ fal.ai <span class="badge-free">無料枠あり</span>
       </button>
       <button class="provider-tab" onclick="setProvider('runway')" id="tab-runway">
@@ -125,19 +128,23 @@
       </button>
     </div>
 
-    <div id="fal-notice" class="free-notice" style="margin-bottom:14px;">
-      <strong>無料枠で使えます！</strong> fal.ai で無料アカウントを作り、<strong>Dashboard → API Keys</strong> でキーを取得（クレジットカード不要、$10分の無料クレジット付き）。<br>
+    <div id="hf-notice" class="free-notice" style="margin-bottom:14px;">
+      <strong>完全無料！</strong> huggingface.co で無料アカウントを作り、<strong>Settings → Access Tokens</strong> でトークンを取得（クレジットカード不要）。<br>
+      ※ Stable Video Diffusion モデルを使用。初回起動に1〜2分かかる場合があります。
+    </div>
+    <div id="fal-notice" class="free-notice" style="margin-bottom:14px; display:none;">
+      <strong>無料枠で使えます！</strong> fal.ai で無料アカウントを作り、<strong>Dashboard → API Keys</strong> でキーを取得（$10分の無料クレジット付き）。<br>
       ※ Stable Video Diffusion（fast-svd-lcm）モデルを使用。
     </div>
 
-    <label id="api-label">fal.ai APIキー（fal_xxxxx または key_xxxxx）</label>
+    <label id="api-label">Hugging Face トークン（hf_xxxxx）</label>
     <div class="input-row">
-      <input type="password" id="apiKeyInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx" autocomplete="off">
+      <input type="password" id="apiKeyInput" placeholder="hf_xxxxxxxxxxxxxxxx" autocomplete="off">
       <button class="btn-save" onclick="saveApiKey()">保存</button>
     </div>
     <div class="saved-note" id="savedNote">✓ 保存しました</div>
     <div class="hint" id="api-hint">
-      取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）
+      取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK
     </div>
   </div>
 
@@ -241,7 +248,7 @@
 </div>
 
 <script>
-let provider = 'fal';
+let provider = 'huggingface';
 let imageBase64 = null;
 let selectedPresets = [];
 let pollTimer = null;
@@ -249,22 +256,27 @@ let currentVideoUrl = null;
 
 function setProvider(p) {
   provider = p;
-  ['fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
+  ['huggingface','fal','runway','kling'].forEach(id => document.getElementById('tab-'+id)?.classList.remove('active'));
   document.getElementById('tab-'+p).classList.add('active');
 
+  const isHF = p === 'huggingface';
   const isFal = p === 'fal';
+  const isFree = isHF || isFal;
+  document.getElementById('hf-notice').style.display = isHF ? 'block' : 'none';
   document.getElementById('fal-notice').style.display = isFal ? 'block' : 'none';
-  document.getElementById('motionCard').style.display = isFal ? 'none' : 'block';
-  document.getElementById('intensityCard').style.display = isFal ? 'block' : 'none';
-  document.getElementById('durationGroup').style.display = isFal ? 'none' : 'flex';
-  document.getElementById('ratioGroup').style.display = isFal ? 'none' : 'flex';
+  document.getElementById('motionCard').style.display = isFree ? 'none' : 'block';
+  document.getElementById('intensityCard').style.display = isFree ? 'block' : 'none';
+  document.getElementById('durationGroup').style.display = isFree ? 'none' : 'flex';
+  document.getElementById('ratioGroup').style.display = isFree ? 'none' : 'flex';
 
   const labels = {
-    fal:    { label: 'fal.ai APIキー', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）' },
-    runway: { label: 'Runway APIキー', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
-    kling:  { label: 'Kling APIキー', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
+    huggingface: { label: 'Hugging Face トークン（hf_xxxxx）', placeholder: 'hf_xxxxxxxxxxxxxxxx', hint: '取得先: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> → New token → Read権限でOK' },
+    fal:         { label: 'fal.ai APIキー', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx', hint: '取得先: <a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard/keys</a> → Add new key（無料枠あり）' },
+    runway:      { label: 'Runway APIキー', placeholder: 'rw_xxxxxxxxxx', hint: '取得先: <a href="https://app.runwayml.com" target="_blank">app.runwayml.com</a> → Settings → API Keys（有料プラン必要）' },
+    kling:       { label: 'Kling APIキー', placeholder: 'xxxxxxxxxx', hint: '取得先: <a href="https://klingai.com" target="_blank">klingai.com</a> → API Access（有料）' },
   };
   document.getElementById('api-label').textContent = labels[p].label;
+  document.getElementById('apiKeyInput').placeholder = labels[p].placeholder;
   document.getElementById('api-hint').innerHTML = labels[p].hint;
 
   const saved = localStorage.getItem(`apiKey_${p}`) || '';
@@ -280,7 +292,7 @@ function saveApiKey() {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('apiKey_fal') || '';
+  const saved = localStorage.getItem('apiKey_huggingface') || '';
   document.getElementById('apiKeyInput').value = saved;
 });
 
@@ -335,12 +347,52 @@ async function generate() {
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('resultArea').style.display = 'none';
 
-  await generateAsync(apiKey);
+  if (provider === 'huggingface') {
+    await generateHF(apiKey);
+  } else {
+    await generateAsync(apiKey);
+  }
 }
 
 
+async function generateHF(apiKey) {
+  showProgress(10, 'Hugging Faceに送信中...');
+  const motionBucket = document.getElementById('motionSlider').value;
+  let fake = 10;
+  const fakeTimer = setInterval(() => {
+    fake = Math.min(fake + 1, 88);
+    showProgress(fake, fake < 30 ? 'モデル起動中（初回は1〜2分かかります）...' : fake < 60 ? '動画を生成中...' : 'もうすぐ完成...');
+  }, 2000);
+  try {
+    const res = await fetch('/api/generate/huggingface', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, motionBucket, imageBase64 }),
+    });
+    clearInterval(fakeTimer);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || '生成に失敗しました');
+    showProgress(100, '完成！');
+    setTimeout(() => {
+      hideProgress();
+      const byteStr = atob(data.videoBase64);
+      const arr = new Uint8Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+      const blob = new Blob([arr], { type: data.mimeType || 'video/mp4' });
+      showResult(URL.createObjectURL(blob), blob);
+      document.getElementById('generateBtn').disabled = false;
+    }, 600);
+  } catch (err) {
+    clearInterval(fakeTimer);
+    hideProgress();
+    showError(err.message);
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
 async function generateAsync(apiKey) {
   const isFal = provider === 'fal';
+
   const prompt = buildPrompt();
   const ratio = document.getElementById('ratioSelect').value;
   const duration = document.getElementById('durationSelect').value;
