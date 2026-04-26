@@ -160,9 +160,12 @@ app.get('/api/status/replicate/:taskId', async (req, res) => {
 // fast-svd-lcm: Stable Video Diffusion の高速版
 app.post('/api/generate/fal', async (req, res) => {
   try {
-    const { apiKey, imageBase64, motionBucket = 100 } = req.body;
+    const { apiKey: rawKey, imageBase64, motionBucket = 100 } = req.body;
+    const apiKey = (rawKey || '').trim();
     if (!apiKey) return res.status(400).json({ error: 'APIキーが必要です' });
     if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
+
+    console.log('fal.ai key prefix:', apiKey.substring(0, 8) + '...');
 
     const response = await axios.post(
       'https://queue.fal.run/fal-ai/fast-svd-lcm',
@@ -179,15 +182,23 @@ app.post('/api/generate/fal', async (req, res) => {
           'Content-Type': 'application/json',
         },
         timeout: 30000,
+        validateStatus: () => true,
       }
     );
 
+    console.log('fal.ai status:', response.status, JSON.stringify(response.data).slice(0, 300));
+
+    if (response.status >= 400) {
+      const detail = response.data?.detail || response.data?.error || response.data?.message || JSON.stringify(response.data);
+      return res.status(500).json({ error: `fal.ai (${response.status}): ${detail}` });
+    }
+
     const requestId = response.data?.request_id;
-    if (!requestId) throw new Error('タスクIDが取得できませんでした');
+    if (!requestId) throw new Error('タスクIDが取得できませんでした: ' + JSON.stringify(response.data));
     res.json({ taskId: requestId, provider: 'fal' });
   } catch (err) {
-    const detail = err.response?.data?.detail || err.response?.data?.error || err.message;
-    res.status(500).json({ error: String(detail) });
+    console.error('fal.ai error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

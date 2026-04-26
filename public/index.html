@@ -342,7 +342,11 @@ function buildPrompt() {
 
 async function generate() {
   const apiKey = (localStorage.getItem(`apiKey_${provider}`) || document.getElementById('apiKeyInput').value || '').trim();
-  if (!apiKey) { showError('APIキー/トークンを入力して保存してください'); return; }
+  if (!apiKey) { showError('APIキーを入力して「保存」ボタンを押してください'); return; }
+  if (provider === 'fal' && !apiKey.includes(':')) {
+    showError('fal.aiのAPIキー形式が違います。「xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xxxxxxxx...」の形式で入力してください。\nfal.ai/dashboard/keys から取得できます。');
+    return;
+  }
   if (!imageBase64) { showError('画像をアップロードしてください'); return; }
 
   hideError();
