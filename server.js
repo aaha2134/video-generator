@@ -21,7 +21,7 @@ app.post('/api/generate/replicate', async (req, res) => {
       'https://api.replicate.com/v1/models/stability-ai/stable-video-diffusion/predictions',
       { input: { input_image: imageBase64, motion_bucket_id: parseInt(motionBucket), fps: 7 } },
       {
-        headers: { Authorization: `Token ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait=5' },
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait=5' },
         timeout: 30000,
       }
     );
@@ -44,7 +44,7 @@ app.get('/api/status/replicate/:taskId', async (req, res) => {
 
     const response = await axios.get(
       `https://api.replicate.com/v1/predictions/${taskId}`,
-      { headers: { Authorization: `Token ${apiKey}` }, timeout: 15000 }
+      { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 15000 }
     );
     const pred = response.data;
     const statusMap = { starting: 'PENDING', processing: 'RUNNING', succeeded: 'SUCCEEDED', failed: 'FAILED', canceled: 'FAILED' };
