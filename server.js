@@ -9,8 +9,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Hugging Face Space (無料) ────────────────────────────────────────
-// multimodalart/stable-video-diffusion の公開SpaceをGradio APIで呼ぶ
+// ── Hugging Face (Inference Providers経由) ──────────────────────────
+// HFトークンでfal-ai/fast-svd-lcmを呼ぶ（Inference Providers機能）
 app.post('/api/generate/huggingface', async (req, res) => {
   try {
     const { apiKey: rawKey, imageBase64, motionBucket = 100 } = req.body;
@@ -18,40 +18,41 @@ app.post('/api/generate/huggingface', async (req, res) => {
     if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
     if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
 
-    // HF Space の Gradio API (queue/join → queue/data)
-    const SPACE = 'https://multimodalart-stable-video-diffusion.hf.space';
-    const sessionHash = Math.random().toString(36).slice(2);
-
-    const joinRes = await axios.post(
-      `${SPACE}/queue/join`,
+    const response = await axios.post(
+      'https://router.huggingface.co/fal-ai/fal-ai/fast-svd-lcm',
       {
-        fn_index: 0,
-        data: [imageBase64, parseInt(motionBucket), 25, 7, 0.02],
-        session_hash: sessionHash,
+        image_url: imageBase64,
+        motion_bucket_id: parseInt(motionBucket),
+        fps: 7,
+        num_frames: 25,
+        cond_aug: 0.02,
       },
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        timeout: 15000,
+        timeout: 30000,
         validateStatus: () => true,
       }
     );
 
-    if (joinRes.status >= 400) {
-      const errMsg = joinRes.data?.detail || joinRes.data?.error || JSON.stringify(joinRes.data);
-      console.error('HF Space join error:', joinRes.status, errMsg);
-      return res.status(500).json({ error: `HF Space (${joinRes.status}): ${errMsg}` });
+    console.log('HF Router response:', response.status, JSON.stringify(response.data).slice(0, 300));
+
+    if (response.status >= 400) {
+      const errMsg = response.data?.error || response.data?.message || JSON.stringify(response.data);
+      return res.status(500).json({ error: `HF Router (${response.status}): ${errMsg}` });
     }
 
-    const eventId = joinRes.data?.event_id;
-    if (!eventId) {
-      console.error('HF Space no event_id:', JSON.stringify(joinRes.data));
-      return res.status(500).json({ error: 'HF Space: イベントIDが取得できませんでした' });
+    const requestId = response.data?.request_id || response.data?.id;
+    if (!requestId) {
+      // 同期レスポンスの場合
+      const videoUrl = response.data?.video?.url || response.data?.videos?.[0]?.url || null;
+      if (videoUrl) return res.json({ taskId: 'sync', provider: 'huggingface', videoUrl });
+      return res.status(500).json({ error: 'タスクIDが取得できませんでした: ' + JSON.stringify(response.data).slice(0, 200) });
     }
 
-    res.json({ taskId: eventId, provider: 'huggingface', sessionHash });
+    res.json({ taskId: requestId, provider: 'huggingface' });
   } catch (err) {
     console.error('HF generate error:', err.message);
     res.status(500).json({ error: err.message });
@@ -61,12 +62,13 @@ app.post('/api/generate/huggingface', async (req, res) => {
 app.get('/api/status/huggingface/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { apiKey: rawKey, sessionHash } = req.query;
+    const { apiKey: rawKey } = req.query;
     const apiKey = (rawKey || '').trim();
 
-    const SPACE = 'https://multimodalart-stable-video-diffusion.hf.space';
+    if (taskId === 'sync') return res.json({ status: 'SUCCEEDED', progress: 100, videoUrl: null });
+
     const statusRes = await axios.get(
-      `${SPACE}/queue/status?session_hash=${sessionHash}`,
+      `https://router.huggingface.co/fal-ai/fal-ai/fast-svd-lcm/requests/${taskId}/status`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
         timeout: 15000,
@@ -75,16 +77,19 @@ app.get('/api/status/huggingface/:taskId', async (req, res) => {
     );
 
     const data = statusRes.data;
-    if (data?.msg === 'process_completed') {
-      const videoUrl = data?.output?.data?.[0]?.url || data?.output?.data?.[0] || null;
+    if (data?.status === 'COMPLETED') {
+      const resultRes = await axios.get(
+        `https://router.huggingface.co/fal-ai/fal-ai/fast-svd-lcm/requests/${taskId}`,
+        { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 15000 }
+      );
+      const videoUrl = resultRes.data?.video?.url || resultRes.data?.videos?.[0]?.url || null;
       return res.json({ status: 'SUCCEEDED', progress: 100, videoUrl });
-    } else if (data?.msg === 'queue_full') {
-      return res.json({ status: 'FAILED', error: 'キューが満杯です。しばらくしてから再試行してください' });
-    } else if (data?.msg === 'process_starts' || data?.msg === 'estimation') {
-      const rank = data?.rank ?? '?';
-      return res.json({ status: 'PENDING', progress: 10, videoUrl: null, queuePos: rank });
+    } else if (data?.status === 'IN_PROGRESS') {
+      return res.json({ status: 'RUNNING', progress: data.progress_percentage || 50, videoUrl: null });
+    } else if (data?.status === 'IN_QUEUE') {
+      return res.json({ status: 'PENDING', progress: 5, videoUrl: null });
     } else {
-      return res.json({ status: 'RUNNING', progress: 50, videoUrl: null });
+      return res.json({ status: 'FAILED', error: data?.error || JSON.stringify(data) });
     }
   } catch (err) {
     res.status(500).json({ error: err.message });
