@@ -300,10 +300,23 @@ function handleFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    imageBase64 = e.target.result;
-    document.getElementById('previewImg').src = imageBase64;
-    document.getElementById('uploadPrompt').style.display = 'none';
-    document.getElementById('uploadPreview').style.display = 'block';
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1024;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('previewImg').src = imageBase64;
+      document.getElementById('uploadPrompt').style.display = 'none';
+      document.getElementById('uploadPreview').style.display = 'block';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
