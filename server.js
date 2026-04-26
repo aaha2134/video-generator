@@ -9,82 +9,88 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Hugging Face (無料) ──────────────────────────────────────────────
-// Stable Video Diffusion img2vid-xt: 25フレーム、約3〜4秒の動画を生成
-app.post('/api/generate/huggingface', upload.single('image'), async (req, res) => {
+// ── fal.ai (無料クレジットあり) ──────────────────────────────────────
+// fast-svd-lcm: Stable Video Diffusion の高速版
+app.post('/api/generate/fal', async (req, res) => {
   try {
-    const { apiKey, motionBucket = 100 } = req.body;
-    if (!apiKey) return res.status(400).json({ error: 'APIトークンが必要です' });
+    const { apiKey, imageBase64, motionBucket = 100 } = req.body;
+    if (!apiKey) return res.status(400).json({ error: 'APIキーが必要です' });
+    if (!imageBase64) return res.status(400).json({ error: '画像が必要です' });
 
-    let imageBuffer;
-    if (req.file) {
-      imageBuffer = req.file.buffer;
-    } else if (req.body.imageBase64) {
-      const b64 = req.body.imageBase64.replace(/^data:[^;]+;base64,/, '');
-      imageBuffer = Buffer.from(b64, 'base64');
-    } else {
-      return res.status(400).json({ error: '画像が必要です' });
-    }
-
-    // HF Inference API: モデルロード中は503が返るのでリトライ
-    const HF_MODEL = 'https://api-inference.huggingface.co/models/stabilityai/stable-video-diffusion-img2vid-xt';
-    let videoBuffer = null;
-    const maxRetries = 20;
-
-    for (let i = 0; i < maxRetries; i++) {
-      const resp = await axios.post(HF_MODEL, imageBuffer, {
+    const response = await axios.post(
+      'https://queue.fal.run/fal-ai/fast-svd-lcm',
+      {
+        image_url: imageBase64,
+        motion_bucket_id: parseInt(motionBucket),
+        fps: 7,
+        num_frames: 25,
+        cond_aug: 0.02,
+      },
+      {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/octet-stream',
-          'x-use-cache': 'false',
+          Authorization: `Key ${apiKey}`,
+          'Content-Type': 'application/json',
         },
-        params: { motion_bucket_id: parseInt(motionBucket) },
-        responseType: 'arraybuffer',
-        timeout: 300000,
-        validateStatus: s => s < 600,
-      });
-
-      if (resp.status === 200) {
-        videoBuffer = Buffer.from(resp.data);
-        break;
-      } else if (resp.status === 503) {
-        // モデルロード中 → estimated_time待つ
-        let wait = 20000;
-        try {
-          const errData = JSON.parse(Buffer.from(resp.data).toString());
-          if (errData.estimated_time) wait = Math.min(errData.estimated_time * 1000, 60000);
-        } catch (_) {}
-        await new Promise(r => setTimeout(r, wait));
-      } else {
-        let errMsg = '生成に失敗しました';
-        try { errMsg = JSON.parse(Buffer.from(resp.data).toString()).error || errMsg; } catch (_) {}
-        return res.status(500).json({ error: errMsg });
+        timeout: 30000,
       }
+    );
+
+    const requestId = response.data?.request_id;
+    if (!requestId) throw new Error('タスクIDが取得できませんでした');
+    res.json({ taskId: requestId, provider: 'fal' });
+  } catch (err) {
+    const detail = err.response?.data?.detail || err.response?.data?.error || err.message;
+    res.status(500).json({ error: String(detail) });
+  }
+});
+
+app.get('/api/status/fal/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { apiKey, model = 'fal-ai/fast-svd-lcm' } = req.query;
+    if (!apiKey) return res.status(400).json({ error: 'APIキーが必要です' });
+
+    // まずステータス確認
+    const statusRes = await axios.get(
+      `https://queue.fal.run/${model}/requests/${taskId}/status`,
+      {
+        headers: { Authorization: `Key ${apiKey}` },
+        timeout: 15000,
+        validateStatus: () => true,
+      }
+    );
+
+    const statusData = statusRes.data;
+    // IN_QUEUE, IN_PROGRESS, COMPLETED
+    if (statusData.status === 'COMPLETED') {
+      // 結果を取得
+      const resultRes = await axios.get(
+        `https://queue.fal.run/${model}/requests/${taskId}`,
+        { headers: { Authorization: `Key ${apiKey}` }, timeout: 15000 }
+      );
+      const videoUrl = resultRes.data?.video?.url || resultRes.data?.videos?.[0]?.url || null;
+      return res.json({ status: 'SUCCEEDED', progress: 100, videoUrl });
+    } else if (statusData.status === 'IN_PROGRESS') {
+      const pct = statusData.progress_percentage || 50;
+      return res.json({ status: 'RUNNING', progress: pct, videoUrl: null });
+    } else if (statusData.status === 'IN_QUEUE') {
+      const pos = statusData.queue_position ?? '?';
+      return res.json({ status: 'PENDING', progress: 5, videoUrl: null, queuePos: pos });
+    } else {
+      const errMsg = statusData.error || statusData.detail || JSON.stringify(statusData);
+      return res.json({ status: 'FAILED', error: errMsg });
     }
-
-    if (!videoBuffer) return res.status(500).json({ error: 'タイムアウト：モデルが起動しませんでした。しばらくしてから再試行してください' });
-
-    const videoBase64 = videoBuffer.toString('base64');
-    res.json({ videoBase64, mimeType: 'video/mp4' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // ── Runway Gen-3 ────────────────────────────────────────────────────
-app.post('/api/generate/runway', upload.single('image'), async (req, res) => {
+app.post('/api/generate/runway', async (req, res) => {
   try {
-    const { prompt, apiKey, ratio = '1280:768', duration = 10 } = req.body;
+    const { prompt, apiKey, ratio = '1280:768', duration = 10, imageBase64 } = req.body;
     if (!apiKey) return res.status(400).json({ error: 'API key required' });
-
-    let imageBase64;
-    if (req.file) {
-      imageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    } else if (req.body.imageBase64) {
-      imageBase64 = req.body.imageBase64;
-    } else {
-      return res.status(400).json({ error: 'Image required' });
-    }
+    if (!imageBase64) return res.status(400).json({ error: 'Image required' });
 
     const response = await axios.post(
       'https://api.dev.runwayml.com/v1/image_to_video',
@@ -113,23 +119,16 @@ app.get('/api/status/runway/:taskId', async (req, res) => {
 });
 
 // ── Kling AI ────────────────────────────────────────────────────────
-app.post('/api/generate/kling', upload.single('image'), async (req, res) => {
+app.post('/api/generate/kling', async (req, res) => {
   try {
-    const { prompt, apiKey, ratio = '16:9', duration = 10 } = req.body;
+    const { prompt, apiKey, ratio = '16:9', duration = 10, imageBase64 } = req.body;
     if (!apiKey) return res.status(400).json({ error: 'API key required' });
+    if (!imageBase64) return res.status(400).json({ error: 'Image required' });
 
-    let imageBase64;
-    if (req.file) {
-      imageBase64 = req.file.buffer.toString('base64');
-    } else if (req.body.imageBase64) {
-      imageBase64 = req.body.imageBase64.replace(/^data:[^;]+;base64,/, '');
-    } else {
-      return res.status(400).json({ error: 'Image required' });
-    }
-
+    const image = imageBase64.replace(/^data:[^;]+;base64,/, '');
     const response = await axios.post(
       'https://api.klingai.com/v1/videos/image2video',
-      { model_name: 'kling-v1', image: imageBase64, prompt: prompt || '', cfg_scale: 0.5, mode: 'std', duration: String(duration), aspect_ratio: ratio },
+      { model_name: 'kling-v1', image, prompt: prompt || '', cfg_scale: 0.5, mode: 'std', duration: String(duration), aspect_ratio: ratio },
       { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 30000 }
     );
     res.json({ taskId: response.data.data?.task_id, provider: 'kling' });
